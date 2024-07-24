@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle and Pedestrian Detection</title>
+    <script>
+        function toggleCamera() {
+            fetch('/toggle_camera', { method: 'POST' })
+                .then(response => response.text())
+                .then(message => {
+                    document.getElementById('camera-status').innerText = message;
+                    document.getElementById('camera-feed').src = message.includes('on') ? '/video_feed' : '';
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>Real-Time Vehicle and Pedestrian Detection</h1>
+    <form action="/upload_video_feed" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="video/*">
+        <input type="submit" value="Upload Video">
+    </form>
+    <form action="/upload_video_feed" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*">
+        <input type="submit" value="Upload Photo">
+    </form>
+    <h2>Live Camera Feed</h2>
+    <button onclick="toggleCamera()">Toggle Camera</button>
+    <p id="camera-status">Camera is off</p>
+    <img id="camera-feed" width="640" height="360">
+</body>
+</html>
