@@ -1,7 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Vehicle and Pedestrian Detection</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Vehicle and Pedestrian Detection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: auto;
+            overflow-x: hidden;
+
+        }
+        header {
+            background-color: #343a40;
+            color: #fff;
+            width: 100%;
+            padding: 1rem 0;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        main {
+            margin-top: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        h1 {
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            width: 100%;
+            max-width: 600px;
+        }
+        input[type="file"] {
+            margin-right: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        #camera-status {
+            margin: 20px 0;
+            font-size: 18px;
+            color: #333;
+        }
+        button {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        button i {
+            margin-right: 5px;
+        }
+        #camera-feed {
+            border: 2px solid #333;
+            border-radius: 10px;
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .stats {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .stats div {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            text-align: center;
+        }
+        .stats div span {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        footer {
+            margin-top: 20px;
+            padding: 10px;
+            text-align: center;
+            background-color: #343a40;
+            color: #fff;
+            width: 100%;
+        }
+    </style>
     <script>
         function toggleCamera() {
             fetch('/toggle_camera', { method: 'POST' })
@@ -12,21 +150,55 @@
                 })
                 .catch(error => console.error('Error:', error));
         }
+
+        function fetchStats() {
+            fetch('/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-detections').innerText = data.total_detections;
+                    document.getElementById('vehicles-detected').innerText = data.vehicles_detected;
+                    document.getElementById('pedestrians-detected').innerText = data.pedestrians_detected;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        setInterval(fetchStats, 1000);
     </script>
 </head>
 <body>
-    <h1>Real-Time Vehicle and Pedestrian Detection</h1>
-    <form action="/upload_video_feed" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept="video/*">
-        <input type="submit" value="Upload Video">
-    </form>
-    <form action="/upload_video_feed" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept="image/*">
-        <input type="submit" value="Upload Photo">
-    </form>
-    <h2>Live Camera Feed</h2>
-    <button onclick="toggleCamera()">Toggle Camera</button>
-    <p id="camera-status">Camera is off</p>
-    <img id="camera-feed" width="640" height="360">
+    <header>
+        <h1>Real-Time Vehicle and Pedestrian Detection</h1>
+    </header>
+    <main>
+        <br>
+        <form action="/upload_video_feed" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="video/*">
+            <input type="submit" value="Upload Video">
+        </form>
+        <form action="/upload_video_feed" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*">
+            <input type="submit" value="Upload Photo">
+        </form>
+        <h3 id="camera-status">Camera turned off</h3>
+        <button onclick="toggleCamera()"><i class="fas fa-video"></i> Toggle Camera</button>
+        <img id="camera-feed" src="" width="640" height="480" />
+        <div class="stats">
+            <div>
+                <span id="total-detections">0</span>
+                Total Detections
+            </div>
+            <div>
+                <span id="vehicles-detected">0</span>
+                Vehicles Detected
+            </div>
+            <div>
+                <span id="pedestrians-detected">0</span>
+                Pedestrians Detected
+            </div>
+        </div>
+    </main>
+    <footer>
+        &copy; 2024 Real-Time Detection System. All Rights Reserved.
+    </footer>
 </body>
 </html>
