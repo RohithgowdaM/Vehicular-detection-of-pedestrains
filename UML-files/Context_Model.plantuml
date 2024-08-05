@@ -1,0 +1,23 @@
+@startuml
+
+
+actor User
+
+package System {
+    [Web Page] as WP
+    [Flask Server] as FS
+    [YOLOv9 Model] as YOLO
+    [Alert System] as Alert
+}
+
+User -down-> WP: Upload Photo/Video
+User -down-> WP: Toggle Camera
+WP -right-> FS: Send Frame
+FS -right-> YOLO: Process Frame
+YOLO -right-> FS: Detection Results
+FS -down-> Alert: Check Alert
+Alert -up-> FS: Send Alert
+FS -right-> WP: Update Results
+
+@enduml
+

@@ -1,0 +1,15 @@
+@startuml
+state "Idle" as Idle
+state "Processing" as Processing
+state "Detecting" as Detecting
+state "Alerting" as Alerting
+
+[*] --> Idle
+
+Idle --> Processing : Upload Photo/Video or Start Camera
+Processing --> Detecting : Frame Captured
+Detecting --> Alerting : Person too close
+Detecting --> Processing : No Alert
+Alerting --> Idle : Alert Sent
+
+@enduml

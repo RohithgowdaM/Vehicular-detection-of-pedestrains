@@ -1,0 +1,10 @@
+@startuml
+
+actor User
+
+User -> (Upload Photo/Video)
+User -> (Toggle Camera)
+User -> (View Real-time Detection)
+User -> (Receive Alert)
+
+@enduml

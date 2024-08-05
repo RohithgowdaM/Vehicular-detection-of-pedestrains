@@ -1,0 +1,16 @@
+@startuml
+actor User
+participant "Web Page" as Web
+participant "Flask Server" as Server
+participant "YOLOv9 Model" as YOLO
+participant "Alert System" as Alert
+
+User -> Web: Upload video/photo or Toggle Camera
+Web -> Server: Send frame
+Server -> YOLO: Process frame for detection
+YOLO -> Server: Return detection results
+Server -> Alert: Check if alert needed
+Alert -> Server: Send alert (if needed)
+Server -> Web: Update detection results
+
+@enduml

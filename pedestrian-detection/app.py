@@ -38,6 +38,8 @@ detections_summary = {
     "pedestrians_detected": 0
 }
 
+frame_count = 0
+
 def estimate_distance(box):
     """
     Estimate distance to the object based on the width of the bounding box.
@@ -46,7 +48,7 @@ def estimate_distance(box):
     distance = (KNOWN_WIDTH * FOCAL_LENGTH) / box_width
     return distance
 
-def is_near(distance, threshold=1.0):
+def is_near(distance, threshold=3.0):
     """
     Determine if the object is near based on the distance threshold.
     """
@@ -91,35 +93,39 @@ def track_objects(frame, detections):
 
 def detect_and_alert(frame):
     global detections_summary
-    results = model.predict(frame)[0]
-    alerts = []
+    global frame_count
 
-    frame = track_objects(frame, results)
+    if frame_count % 4 == 0:  # Process every 4th frame
+        results = model.predict(frame)[0]
+        alerts = []
 
-    for result in results.boxes:
-        box = result.xyxy[0].cpu().numpy()
-        cls = int(result.cls[0].cpu().numpy())
-        conf = result.conf[0].cpu().numpy()
+        frame = track_objects(frame, results)
 
-        if cls == human_class:
-            distance = estimate_distance(box)
-            if is_near(distance):
-                alerts.append(box)
-            label = model.names[int(cls)]
-            cv2.rectangle(frame, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255, 0, 0), 2)
-            cv2.putText(frame, f'{label} {conf:.2f} Dist: {distance:.2f}m', (int(box[0]), int(box[1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
-            detections_summary["pedestrians_detected"] += 1
-        elif cls in vehicle_classes:
-            label = model.names[int(cls)]
-            cv2.rectangle(frame, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (0, 255, 0), 2)
-            cv2.putText(frame, f'{label} {conf:.2f}', (int(box[0]), int(box[1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-            detections_summary["vehicles_detected"] += 1
+        for result in results.boxes:
+            box = result.xyxy[0].cpu().numpy()
+            cls = int(result.cls[0].cpu().numpy())
+            conf = result.conf[0].cpu().numpy()
 
-    detections_summary["total_detections"] = detections_summary["pedestrians_detected"] + detections_summary["vehicles_detected"]
+            if cls == human_class:
+                distance = estimate_distance(box)
+                if is_near(distance):
+                    alerts.append(box)
+                label = model.names[int(cls)]
+                cv2.rectangle(frame, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255, 0, 0), 2)
+                cv2.putText(frame, f'{label} {conf:.2f} Dist: {distance:.2f}m', (int(box[0]), int(box[1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+                detections_summary["pedestrians_detected"] += 1
+            elif cls in vehicle_classes:
+                label = model.names[int(cls)]
+                cv2.rectangle(frame, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (0, 255, 0), 2)
+                cv2.putText(frame, f'{label} {conf:.2f}', (int(box[0]), int(box[1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                detections_summary["vehicles_detected"] += 1
 
-    if alerts:
-        threading.Thread(target=send_alert).start()
+        detections_summary["total_detections"] = detections_summary["pedestrians_detected"] + detections_summary["vehicles_detected"]
 
+        if alerts:
+            threading.Thread(target=send_alert).start()
+
+    frame_count += 1
     return frame
 
 def generate_frames():

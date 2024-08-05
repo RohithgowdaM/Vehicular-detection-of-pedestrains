@@ -1,0 +1,17 @@
+@startuml
+actor User
+participant WebPage
+participant FlaskServer
+participant YOLOv9Model
+participant AlertSystem
+
+User -> WebPage: Upload Photo/Video or Toggle Camera
+WebPage -> FlaskServer: Send Frame
+FlaskServer -> YOLOv9Model: Process Frame
+YOLOv9Model -> FlaskServer: Detection Results
+FlaskServer -> AlertSystem: Check Alert
+AlertSystem -> FlaskServer: Send Alert (if needed)
+FlaskServer -> WebPage: Update Detection Results
+WebPage -> User: Display Results and Alerts
+
+@enduml

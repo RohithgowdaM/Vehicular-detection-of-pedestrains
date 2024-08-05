@@ -1,0 +1,22 @@
+@startuml
+start
+
+:User uploads video/photo or starts camera;
+if (Is Camera On?) then (yes)
+    :Capture video frame;
+else (no)
+    :Read uploaded video/photo;
+endif
+
+:Process frame for detection;
+:Detect vehicles and pedestrians;
+:Estimate distance and direction;
+
+if (Person too close?) then (yes)
+    :Send alert to user;
+else (no)
+    :No action needed;
+endif
+
+stop
+@enduml

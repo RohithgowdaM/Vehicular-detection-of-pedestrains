@@ -1,0 +1,37 @@
+@startuml
+class User {
+}
+
+class WebPage {
+    -videoStream: VideoStream
+    +uploadPhotoVideo(): void
+    +toggleCamera(): void
+}
+
+class FlaskServer {
+    -yoloModel: YOLOv9
+    +processFrame(frame): DetectionResults
+}
+
+class YOLOv9 {
+    +loadModel(): void
+    +predict(frame): DetectionResults
+}
+
+class AlertSystem {
+    +checkAlert(detectionResults): void
+}
+
+class DetectionResults {
+    -detectedObjects: List
+}
+
+User -> WebPage: interact
+WebPage -right-> FlaskServer: sendFrame
+FlaskServer -down-> YOLOv9: processFrame
+YOLOv9 -up-> FlaskServer: detectionResults
+FlaskServer -down-> AlertSystem: checkAlert
+AlertSystem -up-> FlaskServer: sendAlert
+FlaskServer -left-> WebPage: updateResults
+
+@enduml

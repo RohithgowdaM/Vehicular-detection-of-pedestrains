@@ -1,0 +1,34 @@
+@startuml
+
+
+package "Frontend" {
+    class WebPage {
+        +uploadPhotoVideo(): void
+        +toggleCamera(): void
+    }
+}
+
+package "Backend" {
+    class FlaskServer {
+        +processFrame(frame): DetectionResults
+    }
+    class YOLOv9 {
+        +loadModel(): void
+        +predict(frame): DetectionResults
+    }
+    class AlertSystem {
+        +checkAlert(detectionResults): void
+    }
+    class DetectionResults {
+        -detectedObjects: List
+    }
+}
+
+WebPage -down-> FlaskServer: sendFrame
+FlaskServer -right-> YOLOv9: processFrame
+YOLOv9 -left-> FlaskServer: detectionResults
+FlaskServer -down-> AlertSystem: checkAlert
+AlertSystem -up-> FlaskServer: sendAlert
+FlaskServer -up-> WebPage: updateResults
+
+@enduml
