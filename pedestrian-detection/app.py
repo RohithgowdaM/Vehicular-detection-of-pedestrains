@@ -30,15 +30,15 @@ lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS |
 # Previous frame and points
 prev_frame = None
 prev_points = None
-tracked_objects = []
 
+frame_count = 0
+
+# Summary of detections
 detections_summary = {
     "total_detections": 0,
     "vehicles_detected": 0,
     "pedestrians_detected": 0
 }
-
-frame_count = 0
 
 def estimate_distance(box):
     """
@@ -48,7 +48,7 @@ def estimate_distance(box):
     distance = (KNOWN_WIDTH * FOCAL_LENGTH) / box_width
     return distance
 
-def is_near(distance, threshold=3.0):
+def is_near(distance, threshold=4.0):
     """
     Determine if the object is near based on the distance threshold.
     """
@@ -58,7 +58,7 @@ def send_alert():
     winsound.Beep(1000, 500)  # Frequency and duration of the beep
 
 def track_objects(frame, detections):
-    global prev_frame, prev_points, tracked_objects
+    global prev_frame, prev_points
 
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -131,9 +131,13 @@ def detect_and_alert(frame):
 def generate_frames():
     global camera_active
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Error: Could not open video capture.")
+        return
     while camera_active:
         success, frame = cap.read()
         if not success:
+            print("Error: Failed to read frame from camera.")
             break
         frame = detect_and_alert(frame)
         ret, buffer = cv2.imencode('.jpg', frame)
@@ -144,6 +148,9 @@ def generate_frames():
 
 def detect_file(filepath):
     cap = cv2.VideoCapture(filepath)
+    if not cap.isOpened():
+        print("Error: Could not open video file.")
+        return
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
