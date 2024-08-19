@@ -65,6 +65,10 @@ def track_objects(frame, detections):
     if prev_frame is None:
         prev_frame = gray_frame
 
+    # Resize the gray_frame to match the size of prev_frame if they differ
+    if prev_frame.shape != gray_frame.shape:
+        gray_frame = cv2.resize(gray_frame, (prev_frame.shape[1], prev_frame.shape[0]))
+
     # Initialize tracking points if there are new detections
     if detections:
         new_points = []
@@ -76,17 +80,22 @@ def track_objects(frame, detections):
         if new_points:
             prev_points = np.float32(new_points).reshape(-1, 1, 2)
 
-    if prev_points is not None and prev_points.size > 0:
-        next_points, status, _ = cv2.calcOpticalFlowPyrLK(prev_frame, gray_frame, prev_points, None, **lk_params)
-        for i, (new, old) in enumerate(zip(next_points, prev_points)):
-            a, b = new.ravel()
-            c, d = old.ravel()
-            speed = np.sqrt((a - c) ** 2 + (b - d) ** 2)
-            direction = np.arctan2(b - d, a - c) * 180 / np.pi
-            cv2.circle(frame, (int(a), int(b)), 5, (0, 255, 0), -1)
-            cv2.line(frame, (int(a), int(b)), (int(c), int(d)), (0, 255, 0), 2)
-            cv2.putText(frame, f'Speed: {speed:.2f} Direction: {direction:.2f}', (int(a), int(b)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-        prev_points = next_points
+    # Calculate optical flow if there are valid points
+    try:
+        if prev_points is not None and prev_points.size > 0:
+            next_points, status, _ = cv2.calcOpticalFlowPyrLK(prev_frame, gray_frame, prev_points, None, **lk_params)
+            for i, (new, old) in enumerate(zip(next_points, prev_points)):
+                a, b = new.ravel()
+                c, d = old.ravel()
+                speed = np.sqrt((a - c) ** 2 + (b - d) ** 2)
+                direction = np.arctan2(b - d, a - c) * 180 / np.pi
+                cv2.circle(frame, (int(a), int(b)), 5, (0, 255, 0), -1)
+                cv2.line(frame, (int(a), int(b)), (int(c), int(d)), (0, 255, 0), 2)
+                cv2.putText(frame, f'Speed: {speed:.2f} Direction: {direction:.2f}', (int(a), int(b)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            prev_points = next_points
+    except cv2.error as e:
+        print(f"Optical flow error: {e}")
+        prev_points = None  # Reset the points on error
 
     prev_frame = gray_frame
     return frame
@@ -95,7 +104,7 @@ def detect_and_alert(frame):
     global detections_summary
     global frame_count
 
-    if frame_count % 4 == 0:  # Process every 4th frame
+    if frame_count % 1 == 0:  # Process every 4th frame
         results = model.predict(frame)[0]
         alerts = []
 
@@ -162,6 +171,20 @@ def detect_file(filepath):
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
     cap.release()
 
+def detect_photo(filepath):
+    """
+    Detect objects in a photo.
+    """
+    frame = cv2.imread(filepath)
+    if frame is None:
+        print("Error: Could not read image.")
+        return None
+
+    # Perform detection and return the annotated frame
+    frame = detect_and_alert(frame)
+    ret, buffer = cv2.imencode('.jpg', frame)
+    return buffer.tobytes()
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -203,6 +226,29 @@ def upload_video_feed():
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return Response(detect_file(os.path.join(app.config['UPLOAD_FOLDER'], filename)), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/upload_photo', methods=['POST'])
+def upload_photo():
+    """
+    Endpoint to upload a photo and return detected objects on the image.
+    """
+    if 'file' not in request.files:
+        return 'No file part'
+    file = request.files['file']
+    if file.filename == '':
+        return 'No selected file'
+    if file:
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        # Detect objects in the photo
+        detected_image = detect_photo(filepath)
+
+        if detected_image is not None:
+            return Response(detected_image, mimetype='image/jpeg')
+        else:
+            return 'Error processing image', 500
 
 @app.route('/stats')
 def stats():
